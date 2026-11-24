@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.uttt.cafeuttt.data.CartItem
 import mx.uttt.cafeuttt.ui.CafeViewModel
+import mx.uttt.cafeuttt.navigation.Routes
+import mx.uttt.cafeuttt.ui.components.CafeBottomBar
 import mx.uttt.cafeuttt.ui.components.CafeTopBar
 import mx.uttt.cafeuttt.ui.components.ProductImage
 import mx.uttt.cafeuttt.ui.components.QuantitySelector
@@ -50,7 +52,8 @@ fun CartScreen(
     vm: CafeViewModel,
     onBack: () -> Unit,
     onCheckout: () -> Unit,
-    onGoMenu: () -> Unit
+    onGoMenu: () -> Unit,
+    onNavigate: (String) -> Unit
 ) {
     val uiState by vm.uiState.collectAsStateWithLifecycle()
     var code by rememberSaveable { mutableStateOf("") }
@@ -59,16 +62,19 @@ fun CartScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { CafeTopBar("Mi carrito", onBack = onBack) },
         bottomBar = {
-            if (uiState.cart.isNotEmpty()) {
-                Surface(color = MaterialTheme.colorScheme.background, shadowElevation = 8.dp) {
-                    Button(
-                        onClick = onCheckout,
-                        modifier = Modifier.fillMaxWidth().padding(16.dp).height(52.dp),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Text("Continuar al pago", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Column {
+                if (uiState.cart.isNotEmpty()) {
+                    Surface(color = MaterialTheme.colorScheme.background, shadowElevation = 8.dp) {
+                        Button(
+                            onClick = onCheckout,
+                            modifier = Modifier.fillMaxWidth().padding(16.dp).height(52.dp),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text("Continuar al pago", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
                     }
                 }
+                CafeBottomBar(Routes.CART, uiState.cartCount, onNavigate)
             }
         }
     ) { padding ->

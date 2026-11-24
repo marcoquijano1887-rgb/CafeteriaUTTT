@@ -73,7 +73,8 @@ fun CafeApp(vm: CafeViewModel = viewModel()) {
                 vm = vm,
                 onBack = { nav.popBackStack() },
                 onCheckout = { nav.navigate(Routes.CONFIRM) },
-                onGoMenu = { goTab(Routes.MENU) }
+                onGoMenu = { goTab(Routes.MENU) },
+                onNavigate = goTab
             )
         }
 
