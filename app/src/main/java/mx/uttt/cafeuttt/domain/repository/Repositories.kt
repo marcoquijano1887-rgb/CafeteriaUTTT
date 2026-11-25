@@ -35,6 +35,7 @@ interface OrderRepository {
 
 interface UserRepository {
     fun observeUser(id: Int): Flow<User?>
+    fun findByEmail(email: String): Flow<User?>
     fun authenticate(email: String, password: String): Flow<User?>
     suspend fun register(user: User, password: String): Int
     suspend fun update(user: User)

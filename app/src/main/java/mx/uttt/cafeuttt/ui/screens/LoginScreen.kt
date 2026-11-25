@@ -117,13 +117,13 @@ fun LoginScreen(state: CafeUiState, onLogin: (String, String) -> Unit) {
             Spacer(Modifier.height(32.dp))
 
             // Correo
-            Text("Correo institucional", Modifier.fillMaxWidth(), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+            Text("Correo electrónico", Modifier.fillMaxWidth(), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it; emailError = null },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("matricula@uttt.edu.mx") },
+                placeholder = { Text("correo@ejemplo.com") },
                 singleLine = true,
                 shape = fieldShape,
                 isError = emailError != null,
@@ -184,7 +184,7 @@ fun LoginScreen(state: CafeUiState, onLogin: (String, String) -> Unit) {
             ) {
                 HorizontalDivider(Modifier.weight(1f))
                 Text(
-                    "¿Aún no tienes cuenta?",
+                    "Primer acceso: se crea una cuenta local con saldo $0.",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -192,11 +192,11 @@ fun LoginScreen(state: CafeUiState, onLogin: (String, String) -> Unit) {
             }
 
             OutlinedButton(
-                onClick = { soon("El registro estará disponible pronto") },
+                onClick = { soon("Escribe cualquier correo válido y pulsa Iniciar sesión para crear tu cuenta local") },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(14.dp)
             ) {
-                Text("Registrarme", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text("¿Cómo me registro?", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
 
             Spacer(Modifier.height(24.dp))

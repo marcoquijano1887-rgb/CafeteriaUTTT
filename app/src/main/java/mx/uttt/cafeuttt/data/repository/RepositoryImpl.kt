@@ -72,6 +72,8 @@ class OrderRepositoryImp @Inject constructor(
 @Singleton
 class UserRepositoryImp @Inject constructor(private val userDao: UserDao) : UserRepository {
     override fun observeUser(id: Int): Flow<User?> = userDao.observarUsuario(id).map { it?.toDomain() }
+    override fun findByEmail(email: String): Flow<User?> =
+        userDao.buscarPorCorreo(email.trim()).map { it?.toDomain() }
     override fun authenticate(email: String, password: String): Flow<User?> =
         userDao.buscarPorCorreo(email.trim()).map { row ->
             withContext(Dispatchers.Default) {

@@ -9,6 +9,7 @@ import kotlinx.coroutines.runBlocking
 import mx.uttt.cafeuttt.data.database.AppDatabase
 import mx.uttt.cafeuttt.data.database.entity.UserEntity
 import mx.uttt.cafeuttt.data.security.PasswordHasher
+import mx.uttt.cafeuttt.domain.model.User
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -48,5 +49,18 @@ class UserRepositoryLoginTest {
 
         assertEquals("Andrea Martínez", accepted?.name)
         assertNull(rejected)
+    }
+
+    @Test
+    fun registroLocalAceptaCorreoNoInstitucional() = runBlocking {
+        val email = "estudiante@gmail.com"
+        val id = repository.register(
+            User(name = "Estudiante", email = email, balance = 0, balanceUpdated = "Sin movimientos"),
+            "mi-clave"
+        )
+
+        assertEquals(id, repository.findByEmail(email).first()?.id)
+        assertEquals("Estudiante", repository.authenticate(email, "mi-clave").first()?.name)
+        assertNull(repository.authenticate(email, "clave-incorrecta").first())
     }
 }

@@ -2,6 +2,7 @@ package mx.uttt.cafeuttt.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Patterns
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import java.text.SimpleDateFormat
@@ -131,9 +132,35 @@ class CafeViewModel @Inject constructor(
         viewModelScope.launch {
             loginError.value = null
             if (email.isBlank() || password.isBlank()) { loginError.value = "Ingresa correo y contraseña"; return@launch }
+            val normalizedEmail = email.trim()
+            if (!Patterns.EMAIL_ADDRESS.matcher(normalizedEmail).matches()) {
+                loginError.value = "Ingresa un correo electrónico válido"
+                return@launch
+            }
             signingIn.value = true
             try {
-                val user = userRepository.authenticate(email.trim(), password).first()
+                val existingUser = userRepository.findByEmail(normalizedEmail).first()
+                val user = if (existingUser == null) {
+                    val displayName = normalizedEmail.substringBefore('@')
+                        .replace(Regex("[._-]+"), " ")
+                        .split(' ')
+                        .filter(String::isNotBlank)
+                        .joinToString(" ") { part -> part.replaceFirstChar { it.uppercase() } }
+                        .ifBlank { "Usuario CafeUTTT" }
+                    val newUserId = userRepository.register(
+                        User(
+                            name = displayName,
+                            email = normalizedEmail,
+                            balance = 0,
+                            balanceUpdated = "Sin movimientos"
+                        ),
+                        password
+                    )
+                    userRepository.observeUser(newUserId).first()
+                } else {
+                    userRepository.authenticate(normalizedEmail, password).first()
+                }
+
                 if (user == null) loginError.value = "Correo o contraseña incorrectos"
                 else { session.setUser(user); loginError.value = null }
             } catch (e: Exception) { loginError.value = e.message ?: "No se pudo iniciar sesión" }
