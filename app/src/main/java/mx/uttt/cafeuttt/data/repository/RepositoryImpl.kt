@@ -5,6 +5,8 @@ import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import mx.uttt.cafeuttt.data.database.dao.*
 import mx.uttt.cafeuttt.data.database.entity.*
 import mx.uttt.cafeuttt.data.mapper.*
@@ -72,7 +74,9 @@ class UserRepositoryImp @Inject constructor(private val userDao: UserDao) : User
     override fun observeUser(id: Int): Flow<User?> = userDao.observarUsuario(id).map { it?.toDomain() }
     override fun authenticate(email: String, password: String): Flow<User?> =
         userDao.buscarPorCorreo(email.trim()).map { row ->
-            row?.takeIf { PasswordHasher.verify(password, it.passwordHash) }?.toDomain()
+            withContext(Dispatchers.Default) {
+                row?.takeIf { PasswordHasher.verify(password, it.passwordHash) }?.toDomain()
+            }
         }
     override suspend fun register(user: User, password: String): Int =
         userDao.insertarUsuario(user.toEntity(PasswordHasher.hash(password))).toInt()

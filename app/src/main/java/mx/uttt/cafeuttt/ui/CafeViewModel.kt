@@ -44,6 +44,7 @@ data class CafeUiState(
 
 /** ViewModel UDF compartido: las pantallas reciben UiState y emiten eventos. */
 @HiltViewModel
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class CafeViewModel @Inject constructor(
     private val productRepository: ProductRepository,
     private val cartRepository: CartRepository,
@@ -196,7 +197,7 @@ class CafeViewModel @Inject constructor(
             confirming.value = true
             try {
                 val now = Date()
-                val locale = Locale("es", "MX")
+                val locale = Locale.forLanguageTag("es-MX")
                 orderRepository.confirmOrder(
                     userId = user.id,
                     date = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", locale).format(now),

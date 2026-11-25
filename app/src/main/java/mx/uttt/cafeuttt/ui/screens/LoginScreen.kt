@@ -74,7 +74,7 @@ fun LoginScreen(state: CafeUiState, onLogin: (String, String) -> Unit) {
             else -> null
         }
         passwordError = if (password.isBlank()) "Ingresa tu contraseña" else null
-        // Aquí se validarían las credenciales contra la base de datos / servicio.
+        // Solo se envía el evento cuando los campos cumplen la validación local.
         if (emailError == null && passwordError == null) onLogin(email.trim(), password)
     }
 

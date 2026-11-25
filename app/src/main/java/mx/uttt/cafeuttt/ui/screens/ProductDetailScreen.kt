@@ -55,7 +55,6 @@ fun ProductDetailScreen(
         return
     }
 
-    var proteinIndex by rememberSaveable { mutableIntStateOf(0) }
     var notes by rememberSaveable { mutableStateOf("") }
     var qty by rememberSaveable { mutableIntStateOf(1) }
 
