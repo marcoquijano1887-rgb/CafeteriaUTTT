@@ -1,7 +1,10 @@
 package mx.uttt.cafeuttt.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -28,8 +31,21 @@ object Routes {
 }
 
 @Composable
-fun CafeApp(vm: CafeViewModel = viewModel()) {
+fun CafeApp(vm: CafeViewModel = hiltViewModel()) {
     val nav = rememberNavController()
+    val state by vm.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state.user?.id) {
+        if (state.user != null && nav.currentDestination?.route == Routes.LOGIN) {
+            nav.navigate(Routes.MENU) { popUpTo(Routes.LOGIN) { inclusive = true } }
+        }
+    }
+    LaunchedEffect(state.confirmationEvent) {
+        if (state.confirmationEvent > 0) {
+            nav.navigate(Routes.ORDERS) { popUpTo(Routes.MENU) }
+            vm.consumeConfirmation()
+        }
+    }
 
     // Navegación de la barra inferior: conserva el estado de cada sección.
     val goTab: (String) -> Unit = { route ->
@@ -43,14 +59,16 @@ fun CafeApp(vm: CafeViewModel = viewModel()) {
     NavHost(navController = nav, startDestination = Routes.LOGIN) {
 
         composable(Routes.LOGIN) {
-            LoginScreen(onLogin = {
-                nav.navigate(Routes.MENU) { popUpTo(Routes.LOGIN) { inclusive = true } }
-            })
+            LoginScreen(state = state, onLogin = vm::signIn)
         }
 
         composable(Routes.MENU) {
             MenuScreen(
-                vm = vm,
+                state = state,
+                onQueryChange = vm::setQuery,
+                onCategoryChange = vm::setCategory,
+                onAdd = vm::addQuick,
+                onClearMessage = vm::clearMessage,
                 onProduct = { nav.navigate(Routes.detail(it)) },
                 onCart = { goTab(Routes.CART) },
                 onNavigate = goTab
@@ -61,16 +79,25 @@ fun CafeApp(vm: CafeViewModel = viewModel()) {
             route = Routes.DETAIL,
             arguments = listOf(navArgument("id") { type = NavType.IntType })
         ) { entry ->
+            val productId = entry.arguments?.getInt("id") ?: 0
+            LaunchedEffect(productId) { vm.openProduct(productId) }
             ProductDetailScreen(
-                vm = vm,
-                productId = entry.arguments?.getInt("id") ?: 0,
-                onBack = { nav.popBackStack() }
+                state = state,
+                productId = productId,
+                onSelectProtein = vm::selectProtein,
+                onAdd = vm::addDetailToCart,
+                onBack = { vm.closeProduct(); nav.popBackStack() }
             )
         }
 
         composable(Routes.CART) {
             CartScreen(
-                vm = vm,
+                state = state,
+                onQtyChange = vm::changeQty,
+                onRemove = vm::remove,
+                onCouponInput = vm::setCouponInput,
+                onApplyCoupon = vm::applyCoupon,
+                onClearError = vm::clearError,
                 onBack = { nav.popBackStack() },
                 onCheckout = { nav.navigate(Routes.CONFIRM) },
                 onGoMenu = { goTab(Routes.MENU) },
@@ -80,20 +107,18 @@ fun CafeApp(vm: CafeViewModel = viewModel()) {
 
         composable(Routes.CONFIRM) {
             ConfirmOrderScreen(
-                vm = vm,
+                state = state,
                 onBack = { nav.popBackStack() },
-                onConfirmed = {
-                    nav.navigate(Routes.ORDERS) { popUpTo(Routes.MENU) }
-                }
+                onConfirmed = vm::confirmOrder
             )
         }
 
         composable(Routes.ORDERS) {
-            OrdersScreen(vm = vm, onNavigate = goTab)
+            OrdersScreen(state = state, onClearMessage = vm::clearMessage, onNavigate = goTab)
         }
 
         composable(Routes.PROFILE) {
-            ProfileScreen(vm = vm, onNavigate = goTab)
+            ProfileScreen(state = state, onNavigate = goTab)
         }
     }
 }

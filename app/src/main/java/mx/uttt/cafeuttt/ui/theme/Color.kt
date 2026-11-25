@@ -10,6 +10,8 @@ val CremaTarjeta = Color(0xFFFFFCF9)
 val Durazno = Color(0xFFF7DCCB)
 val Ambar = Color(0xFFE8A03A)
 val VerdeAvance = Color(0xFF2E8B57)
+// Variación más oscura para texto; conserva contraste suficiente sobre crema y verde suave.
+val VerdeTexto = Color(0xFF236B43)
 val VerdeSuave = Color(0xFFEAF7EF)
 val Tinta = Color(0xFF2B211C)
 val TintaSuave = Color(0xFF7A6A62)

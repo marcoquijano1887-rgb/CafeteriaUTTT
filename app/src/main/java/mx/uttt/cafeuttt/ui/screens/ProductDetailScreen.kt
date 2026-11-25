@@ -31,8 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import mx.uttt.cafeuttt.data.SampleData
-import mx.uttt.cafeuttt.ui.CafeViewModel
+import mx.uttt.cafeuttt.ui.CafeUiState
 import mx.uttt.cafeuttt.ui.components.CafeTopBar
 import mx.uttt.cafeuttt.ui.components.QuantitySelector
 import mx.uttt.cafeuttt.ui.components.RadioRow
@@ -41,15 +40,27 @@ import mx.uttt.cafeuttt.ui.components.money
 
 /** Pantalla 3. Detalle del producto. */
 @Composable
-fun ProductDetailScreen(vm: CafeViewModel, productId: Int, onBack: () -> Unit) {
-    val product = SampleData.productById(productId)
-    if (product == null) return
+fun ProductDetailScreen(
+    state: CafeUiState,
+    productId: Int,
+    onSelectProtein: (Int) -> Unit,
+    onAdd: (String, Int) -> Unit,
+    onBack: () -> Unit
+) {
+    val product = state.detailProduct
+    if (product == null || product.id != productId) {
+        Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = { CafeTopBar("Detalle", onBack = onBack) }) { padding ->
+            Text(if (state.isLoading) "Cargando producto…" else "No se encontró el producto", Modifier.padding(padding).padding(24.dp))
+        }
+        return
+    }
 
     var proteinIndex by rememberSaveable { mutableIntStateOf(0) }
     var notes by rememberSaveable { mutableStateOf("") }
     var qty by rememberSaveable { mutableIntStateOf(1) }
 
-    val protein = if (product.hasProtein) SampleData.proteins[proteinIndex] else null
+    val selectedProteinId = state.selectedProteinId ?: state.proteins.firstOrNull()?.id
+    val protein = if (product.hasProtein) state.proteins.firstOrNull { it.id == selectedProteinId } else null
     val unitPrice = product.price + (protein?.extra ?: 0)
 
     Scaffold(
@@ -59,7 +70,7 @@ fun ProductDetailScreen(vm: CafeViewModel, productId: Int, onBack: () -> Unit) {
             Surface(color = MaterialTheme.colorScheme.background, shadowElevation = 8.dp) {
                 Button(
                     onClick = {
-                        vm.addToCart(product, protein?.name, protein?.extra ?: 0, notes, qty)
+                        onAdd(notes, qty)
                         onBack()
                     },
                     modifier = Modifier.fillMaxWidth().padding(16.dp).height(52.dp),
@@ -136,16 +147,16 @@ fun ProductDetailScreen(vm: CafeViewModel, productId: Int, onBack: () -> Unit) {
 
             if (product.hasProtein) {
                 SectionLabel("Elige tu proteína")
-                SampleData.proteins.forEachIndexed { i, option ->
+                state.proteins.forEachIndexed { i, option ->
                     RadioRow(
-                        selected = proteinIndex == i,
+                        selected = option.id == selectedProteinId,
                         label = option.name,
                         trailing = when {
                             option.extra > 0 -> "+${money(option.extra)}"
                             option.extra < 0 -> money(option.extra)
                             else -> "Incluido"
                         },
-                        onClick = { proteinIndex = i }
+                        onClick = { onSelectProtein(option.id) }
                     )
                 }
                 Spacer(Modifier.height(12.dp))

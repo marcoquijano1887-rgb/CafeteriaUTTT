@@ -116,7 +116,7 @@ fun CafeBottomBar(current: String, cartCount: Int, onNavigate: (String) -> Unit)
                         Icon(tab.icon, contentDescription = tab.label)
                     }
                 },
-                label = { Text(tab.label, fontSize = 11.sp) },
+                label = { Text(tab.label, fontSize = 12.sp) },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = MaterialTheme.colorScheme.primary,
                     selectedTextColor = MaterialTheme.colorScheme.primary,
@@ -147,7 +147,7 @@ fun ProductImage(emoji: String, size: Dp, modifier: Modifier = Modifier) {
 @Composable
 fun QuantitySelector(qty: Int, onMinus: () -> Unit, onPlus: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        OutlinedIconButton(onClick = onMinus, modifier = Modifier.size(32.dp)) {
+        OutlinedIconButton(onClick = onMinus, modifier = Modifier.size(48.dp)) {
             Icon(Icons.Filled.Remove, contentDescription = "Disminuir", modifier = Modifier.size(16.dp))
         }
         Text(
@@ -156,7 +156,7 @@ fun QuantitySelector(qty: Int, onMinus: () -> Unit, onPlus: () -> Unit) {
             textAlign = TextAlign.Center,
             fontWeight = FontWeight.Bold
         )
-        FilledIconButton(onClick = onPlus, modifier = Modifier.size(32.dp)) {
+        FilledIconButton(onClick = onPlus, modifier = Modifier.size(48.dp)) {
             Icon(Icons.Filled.Add, contentDescription = "Aumentar", modifier = Modifier.size(16.dp))
         }
     }
@@ -175,7 +175,7 @@ fun RadioRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = enabled, onClick = onClick)
-            .heightIn(min = 44.dp),
+            .heightIn(min = 48.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         androidx.compose.material3.RadioButton(

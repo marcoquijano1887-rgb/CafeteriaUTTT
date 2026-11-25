@@ -44,42 +44,41 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.uttt.cafeuttt.data.Order
 import mx.uttt.cafeuttt.data.OrderStatus
 import mx.uttt.cafeuttt.navigation.Routes
-import mx.uttt.cafeuttt.ui.CafeViewModel
+import mx.uttt.cafeuttt.ui.CafeUiState
 import mx.uttt.cafeuttt.ui.components.CafeBottomBar
 import mx.uttt.cafeuttt.ui.components.CafeTopBar
 import mx.uttt.cafeuttt.ui.components.money
 import mx.uttt.cafeuttt.ui.theme.Tinta
 import mx.uttt.cafeuttt.ui.theme.VerdeAvance
+import mx.uttt.cafeuttt.ui.theme.VerdeTexto
 import mx.uttt.cafeuttt.ui.theme.VerdeSuave
 import java.util.Random
 
 /** Pantalla 6. Mis pedidos. */
 @Composable
-fun OrdersScreen(vm: CafeViewModel, onNavigate: (String) -> Unit) {
-    val uiState by vm.uiState.collectAsStateWithLifecycle()
+fun OrdersScreen(state: CafeUiState, onClearMessage: () -> Unit, onNavigate: (String) -> Unit) {
     val snackbar = remember { SnackbarHostState() }
 
-    LaunchedEffect(uiState.message) {
-        uiState.message?.let {
+    LaunchedEffect(state.message) {
+        state.message?.let {
+            onClearMessage()
             snackbar.showSnackbar(it)
-            vm.clearMessage()
         }
     }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { CafeTopBar("Mis pedidos") },
-        bottomBar = { CafeBottomBar(Routes.ORDERS, uiState.cartCount, onNavigate) },
+        bottomBar = { CafeBottomBar(Routes.ORDERS, state.cartCount, onNavigate) },
         snackbarHost = {
             // Snackbar verde de confirmación, como en el prototipo
             SnackbarHost(snackbar) { data ->
                 Snackbar(
                     containerColor = VerdeSuave,
-                    contentColor = VerdeAvance,
+                    contentColor = VerdeTexto,
                     shape = RoundedCornerShape(14.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -99,7 +98,7 @@ fun OrdersScreen(vm: CafeViewModel, onNavigate: (String) -> Unit) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            uiState.activeOrder?.let { order ->
+            state.activeOrder?.let { order ->
                 item { ActiveOrderCard(order) }
             }
             item {
@@ -110,7 +109,13 @@ fun OrdersScreen(vm: CafeViewModel, onNavigate: (String) -> Unit) {
                     fontWeight = FontWeight.ExtraBold
                 )
             }
-            items(uiState.history, key = { it.number }) { order -> HistoryCard(order) }
+            if (!state.isLoading && state.history.isEmpty() && state.activeOrder == null) {
+                item { Text("Aún no tienes pedidos.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            }
+            state.error?.let { error ->
+                item { Text(error, color = MaterialTheme.colorScheme.error) }
+            }
+            items(state.history, key = { it.number }) { order -> HistoryCard(order) }
         }
     }
 }
@@ -269,7 +274,7 @@ private fun HistoryCard(order: Order) {
                 Text(
                     order.status.label,
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (order.status == OrderStatus.CANCELADO) MaterialTheme.colorScheme.error else VerdeAvance
+                    color = if (order.status == OrderStatus.CANCELADO) MaterialTheme.colorScheme.error else VerdeTexto
                 )
             }
             Text(money(order.total), fontWeight = FontWeight.ExtraBold)

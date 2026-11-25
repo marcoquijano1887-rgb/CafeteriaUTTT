@@ -45,25 +45,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import mx.uttt.cafeuttt.data.SampleData
-import mx.uttt.cafeuttt.ui.CafeViewModel
+import mx.uttt.cafeuttt.ui.CafeUiState
+import mx.uttt.cafeuttt.domain.model.PaymentMethod
 import mx.uttt.cafeuttt.ui.components.CafeTopBar
 import mx.uttt.cafeuttt.ui.components.RadioRow
 import mx.uttt.cafeuttt.ui.components.SectionLabel
 import mx.uttt.cafeuttt.ui.components.money
 
 private val paymentMethods = listOf("Efectivo en caja", "Tarjeta de débito/crédito", "Saldo de credencial")
+private val pickupTimes = listOf("Hoy · 12:45", "Hoy · 13:00", "Hoy · 13:15", "Hoy · 13:30", "Hoy · 13:45")
 
 /** Pantalla 5. Confirmar pedido. */
 @Composable
-fun ConfirmOrderScreen(vm: CafeViewModel, onBack: () -> Unit, onConfirmed: () -> Unit) {
-    val uiState by vm.uiState.collectAsStateWithLifecycle()
+fun ConfirmOrderScreen(state: CafeUiState, onBack: () -> Unit, onConfirmed: (String, PaymentMethod) -> Unit) {
     var timeIndex by rememberSaveable { mutableIntStateOf(2) }
     var payment by rememberSaveable { mutableIntStateOf(0) }
     var menuOpen by remember { mutableStateOf(false) }
 
-    val balance = vm.user.balance
-    val canPayWithBalance = balance >= uiState.total
+    val balance = state.user?.balance ?: 0
+    val canPayWithBalance = balance >= state.total
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -91,7 +91,7 @@ fun ConfirmOrderScreen(vm: CafeViewModel, onBack: () -> Unit, onConfirmed: () ->
                     ) {
                         Icon(Icons.Outlined.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Text(
-                            SampleData.pickupTimes[timeIndex],
+                            pickupTimes[timeIndex.coerceIn(pickupTimes.indices)],
                             modifier = Modifier.weight(1f).padding(start = 10.dp),
                             fontWeight = FontWeight.Medium
                         )
@@ -99,7 +99,7 @@ fun ConfirmOrderScreen(vm: CafeViewModel, onBack: () -> Unit, onConfirmed: () ->
                     }
                 }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                    SampleData.pickupTimes.forEachIndexed { i, t ->
+                    pickupTimes.forEachIndexed { i, t ->
                         DropdownMenuItem(
                             text = { Text(t) },
                             onClick = { timeIndex = i; menuOpen = false }
@@ -141,7 +141,7 @@ fun ConfirmOrderScreen(vm: CafeViewModel, onBack: () -> Unit, onConfirmed: () ->
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 Column(Modifier.fillMaxWidth().padding(14.dp)) {
-                    uiState.cart.forEach { item ->
+                    state.cart.forEach { item ->
                         Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
                             Text(
                                 "${item.qty} × ${item.product.name}",
@@ -151,16 +151,16 @@ fun ConfirmOrderScreen(vm: CafeViewModel, onBack: () -> Unit, onConfirmed: () ->
                             Text(money(item.subtotal), style = MaterialTheme.typography.bodySmall)
                         }
                     }
-                    if (uiState.discount > 0) {
+                    if (state.discount > 0) {
                         Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
                             Text("Descuento", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                            Text(money(-uiState.discount), style = MaterialTheme.typography.bodySmall)
+                            Text(money(-state.discount), style = MaterialTheme.typography.bodySmall)
                         }
                     }
                     HorizontalDivider(Modifier.padding(vertical = 8.dp))
                     Row(Modifier.fillMaxWidth()) {
                         Text("Total a pagar", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                        Text(money(uiState.total), fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.titleMedium)
+                        Text(money(state.total), fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.titleMedium)
                     }
                 }
             }
@@ -198,15 +198,21 @@ fun ConfirmOrderScreen(vm: CafeViewModel, onBack: () -> Unit, onConfirmed: () ->
 
             Spacer(Modifier.height(20.dp))
 
+            state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = 8.dp)) }
             Button(
                 onClick = {
-                    vm.confirmOrder(SampleData.pickupTimes[timeIndex])
-                    onConfirmed()
+                    val method = when (payment) {
+                        1 -> PaymentMethod.TARJETA
+                        2 -> PaymentMethod.SALDO_CREDENCIAL
+                        else -> PaymentMethod.EFECTIVO
+                    }
+                    onConfirmed(pickupTimes[timeIndex.coerceIn(pickupTimes.indices)], method)
                 },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(14.dp),
+                enabled = !state.isConfirming && state.cart.isNotEmpty() && (payment != 2 || canPayWithBalance)
             ) {
-                Text("Confirmar pedido", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(if (state.isConfirming) "Confirmando…" else "Confirmar pedido", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
             Spacer(Modifier.height(8.dp))
             OutlinedButton(

@@ -35,9 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.uttt.cafeuttt.data.CartItem
-import mx.uttt.cafeuttt.ui.CafeViewModel
+import mx.uttt.cafeuttt.ui.CafeUiState
 import mx.uttt.cafeuttt.navigation.Routes
 import mx.uttt.cafeuttt.ui.components.CafeBottomBar
 import mx.uttt.cafeuttt.ui.components.CafeTopBar
@@ -49,21 +48,23 @@ import mx.uttt.cafeuttt.ui.components.money
 /** Pantalla 4. Carrito. */
 @Composable
 fun CartScreen(
-    vm: CafeViewModel,
+    state: CafeUiState,
+    onQtyChange: (CartItem, Int) -> Unit,
+    onRemove: (CartItem) -> Unit,
+    onCouponInput: (String) -> Unit,
+    onApplyCoupon: () -> Unit,
+    onClearError: () -> Unit,
     onBack: () -> Unit,
     onCheckout: () -> Unit,
     onGoMenu: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
-    val uiState by vm.uiState.collectAsStateWithLifecycle()
-    var code by rememberSaveable { mutableStateOf("") }
-
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { CafeTopBar("Mi carrito", onBack = onBack) },
         bottomBar = {
             Column {
-                if (uiState.cart.isNotEmpty()) {
+                if (state.cart.isNotEmpty()) {
                     Surface(color = MaterialTheme.colorScheme.background, shadowElevation = 8.dp) {
                         Button(
                             onClick = onCheckout,
@@ -74,11 +75,15 @@ fun CartScreen(
                         }
                     }
                 }
-                CafeBottomBar(Routes.CART, uiState.cartCount, onNavigate)
+            CafeBottomBar(Routes.CART, state.cartCount, onNavigate)
             }
         }
     ) { padding ->
-        if (uiState.cart.isEmpty()) {
+        if (state.isLoading) {
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Text("Cargando carrito…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        } else if (state.cart.isEmpty()) {
             // Carrito vacío
             Column(
                 modifier = Modifier.fillMaxSize().padding(padding).padding(32.dp),
@@ -103,40 +108,43 @@ fun CartScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(uiState.cart, key = { it.id }) { item ->
+                items(state.cart, key = { it.id }) { item ->
                     CartItemCard(
                         item = item,
-                        onMinus = { vm.changeQty(item.id, -1) },
-                        onPlus = { vm.changeQty(item.id, +1) },
-                        onRemove = { vm.remove(item.id) }
+                        onMinus = { onQtyChange(item, -1) },
+                        onPlus = { onQtyChange(item, +1) },
+                        onRemove = { onRemove(item) }
                     )
                 }
 
                 item {
+                    state.error?.let { error ->
+                        Text(error, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 6.dp))
+                    }
                     Column {
                         SectionLabel("Cupón de descuento")
                         Spacer(Modifier.height(6.dp))
                         Row(verticalAlignment = Alignment.Top) {
                             OutlinedTextField(
-                                value = code,
-                                onValueChange = { code = it; vm.clearCouponError() },
+                                value = state.couponInput,
+                                onValueChange = { onCouponInput(it); onClearError() },
                                 modifier = Modifier.weight(1f),
                                 placeholder = { Text("Código") },
                                 singleLine = true,
                                 shape = RoundedCornerShape(14.dp),
-                                isError = uiState.couponError != null,
+                                isError = state.error != null,
                                 supportingText = {
-                                    val error = uiState.couponError
+                                    val error = state.error
                                     if (error != null) {
                                         Text(error)
-                                    } else if (uiState.couponCode != null) {
-                                        Text("Cupón aplicado")
+                                    } else if (state.coupon != null) {
+                                        Text("Cupón ${state.coupon.code} aplicado: ${state.coupon.percent}%")
                                     }
                                 }
                             )
                             Spacer(Modifier.padding(4.dp))
                             OutlinedButton(
-                                onClick = { vm.applyCoupon(code) },
+                                onClick = onApplyCoupon,
                                 modifier = Modifier.height(56.dp),
                                 shape = RoundedCornerShape(14.dp)
                             ) {
@@ -149,9 +157,9 @@ fun CartScreen(
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         HorizontalDivider()
-                        AmountRow("Subtotal", money(uiState.subtotal))
-                        AmountRow("Descuento", money(-uiState.discount))
-                        AmountRow("Total", money(uiState.total), bold = true)
+                        AmountRow("Subtotal", money(state.subtotal))
+                        AmountRow("Descuento", money(-state.discount))
+                        AmountRow("Total", money(state.total), bold = true)
                     }
                 }
             }

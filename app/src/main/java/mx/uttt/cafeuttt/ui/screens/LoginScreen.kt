@@ -52,10 +52,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import mx.uttt.cafeuttt.ui.CafeUiState
 
 /** Pantalla 1. Inicio de sesión. */
 @Composable
-fun LoginScreen(onLogin: () -> Unit) {
+fun LoginScreen(state: CafeUiState, onLogin: (String, String) -> Unit) {
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
@@ -74,7 +75,7 @@ fun LoginScreen(onLogin: () -> Unit) {
         }
         passwordError = if (password.isBlank()) "Ingresa tu contraseña" else null
         // Aquí se validarían las credenciales contra la base de datos / servicio.
-        if (emailError == null && passwordError == null) onLogin()
+        if (emailError == null && passwordError == null) onLogin(email.trim(), password)
     }
 
     fun soon(text: String) {
@@ -142,8 +143,13 @@ fun LoginScreen(onLogin: () -> Unit) {
                 placeholder = { Text("••••••••") },
                 singleLine = true,
                 shape = fieldShape,
-                isError = passwordError != null,
-                supportingText = { passwordError?.let { Text(it) } },
+                isError = passwordError != null || state.loginError != null,
+                supportingText = {
+                    when {
+                        passwordError != null -> Text(passwordError!!)
+                        state.loginError != null -> Text(state.loginError!!)
+                    }
+                },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                 trailingIcon = {
@@ -161,9 +167,10 @@ fun LoginScreen(onLogin: () -> Unit) {
             Button(
                 onClick = { submit() },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(14.dp),
+                enabled = !state.isSigningIn
             ) {
-                Text("Iniciar sesión", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(if (state.isSigningIn) "Validando…" else "Iniciar sesión", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
 
             TextButton(onClick = { soon("La recuperación de contraseña estará disponible pronto") }) {

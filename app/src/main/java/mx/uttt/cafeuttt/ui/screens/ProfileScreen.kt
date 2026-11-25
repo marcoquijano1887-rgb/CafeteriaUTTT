@@ -38,10 +38,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import mx.uttt.cafeuttt.navigation.Routes
-import mx.uttt.cafeuttt.ui.CafeViewModel
+import mx.uttt.cafeuttt.ui.CafeUiState
 import mx.uttt.cafeuttt.ui.components.CafeBottomBar
 import mx.uttt.cafeuttt.ui.components.CafeTopBar
 import mx.uttt.cafeuttt.ui.theme.Terracota
@@ -49,16 +48,15 @@ import mx.uttt.cafeuttt.ui.theme.TerracotaOscuro
 
 /** Pantalla 7. Mi perfil. */
 @Composable
-fun ProfileScreen(vm: CafeViewModel, onNavigate: (String) -> Unit) {
-    val uiState by vm.uiState.collectAsStateWithLifecycle()
-    val user = vm.user
+fun ProfileScreen(state: CafeUiState, onNavigate: (String) -> Unit) {
+    val user = state.user
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { CafeTopBar("Mi perfil") },
-        bottomBar = { CafeBottomBar(Routes.PROFILE, uiState.cartCount, onNavigate) },
+        bottomBar = { CafeBottomBar(Routes.PROFILE, state.cartCount, onNavigate) },
         snackbarHost = { SnackbarHost(snackbar) }
     ) { padding ->
         Column(
@@ -69,6 +67,10 @@ fun ProfileScreen(vm: CafeViewModel, onNavigate: (String) -> Unit) {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            if (user == null) {
+                Text(if (state.isLoading) "Cargando perfil…" else "No hay una sesión activa", modifier = Modifier.padding(24.dp))
+                return@Column
+            }
             Spacer(Modifier.height(8.dp))
 
             // Avatar con iniciales
